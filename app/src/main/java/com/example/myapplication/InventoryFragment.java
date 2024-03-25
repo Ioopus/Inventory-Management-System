@@ -55,8 +55,6 @@ public class InventoryFragment extends Fragment {
         layoutContainer = view.findViewById(R.id.layoutContainer);
         forecastContainer  = view.findViewById(R.id.forecastContainer);
 
-
-
         createForecastInputFields();
         initializeCategoryItems();
         createDynamicInventoryInput();
@@ -75,6 +73,15 @@ public class InventoryFragment extends Fragment {
             return "(boxes)";
         if (itemName.contains("Bag") && itemName != "SALT Bag" || itemName.contains(("Oreo")) || itemName.contains(("Mayonnaise")) || itemName.contains(("LIDS")) || itemName.contains(("CUPS")) || itemName.contains(("Cups")) || itemName.contains(("Lids")))
             return "(sleeves)";
+        if (itemName.contains(("Milkshake Base"))){
+            return "(bags)";
+        }
+        if (itemName.contains("Lettuce")) {
+            return "heads";
+        }
+        if (itemName.contains("Peanuts Salted")) {
+            return "(unopened)";
+        }
         return "";
     }
 
@@ -106,6 +113,8 @@ public class InventoryFragment extends Fragment {
                 "Forks", "Knives"));
         // ... Add other categories like "Drinks", "Chemicals", "Lobby" ...
     }
+
+
     private void createDynamicInventoryInput() {
         for (Map.Entry<String, List<String>> entry : categoryItems.entrySet()) {
             String categoryText = entry.getKey().trim();
@@ -202,7 +211,12 @@ public class InventoryFragment extends Fragment {
                         double quantity = Double.parseDouble((String) value);
                         EditText editText = editTextMap.get(key);
                         if (editText != null) {
-                            editText.setText(String.format(Locale.getDefault(), "%.2f", quantity));
+                            // Truncate decimal points for integers
+                            if (quantity == (int) quantity) {
+                                editText.setText(String.format(Locale.getDefault(), "%.0f", quantity));
+                            } else {
+                                editText.setText(String.format(Locale.getDefault(), "%.2f", quantity));
+                            }
                         }
                     }
                 } catch (NumberFormatException e) {
@@ -211,6 +225,12 @@ public class InventoryFragment extends Fragment {
                 }
             }
         }
+    }
+
+    private void clearSharedPreferences() {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear(); // Clear all saved values
+        editor.apply();
     }
 
     private void createForecastInputFields() {
@@ -223,9 +243,9 @@ public class InventoryFragment extends Fragment {
         // Adjust this based on how many days you want to forecast and the current day
         String[] weekdays;
         if (dayOfWeek >= Calendar.MONDAY && dayOfWeek <= Calendar.WEDNESDAY) {
-            weekdays = new String[]{"Thursday Forecast", "Friday Forecast", "Saturday Forecast", "Sunday Forecast"};
+            weekdays = new String[]{"Wednesday Forecast", "Thursday Forecast", "Friday Forecast"};
         } else {
-            weekdays = new String[]{"Monday Forecast", "Tuesday Forecast", "Wednesday Forecast"};
+            weekdays = new String[]{"Saturday Forecast", "Sunday Forecast", "Monday Forecast", "Tuesday Forecast"};
         }
 
         for (String day : weekdays) {

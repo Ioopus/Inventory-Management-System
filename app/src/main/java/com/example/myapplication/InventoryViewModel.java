@@ -297,7 +297,7 @@ public class InventoryViewModel extends AndroidViewModel {
     public void loadInventoryQuantities() {
         // Load inventory quantities and update LiveData
         executeDbOperation(() -> {
-            Map<String, Integer> inventoryQuantities = new HashMap<>();
+            Map<String, Integer> inventoryQuantities = new HashMap  <>();
             SQLiteDatabase db = dbHelper.getReadableDatabase();
             Cursor cursor = null;
             try {

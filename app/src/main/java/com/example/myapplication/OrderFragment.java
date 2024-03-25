@@ -71,6 +71,7 @@ public class OrderFragment extends Fragment {
 
     ));
 
+
     private final Set<String> produceItems = new HashSet<>(Arrays.asList(
             "Beef", "Hot Dogs", "Bacon", "CheeseSliced", "CheeseCurds",
             "Lettuce", "Tomatoes", "Onion", "GreenPeppers", "JalapenoPeppers",
@@ -111,20 +112,18 @@ public class OrderFragment extends Fragment {
         put("6lb Paper Bag", 4);
         put("12lb Paper Bag", 2);
         put("Delivery Bags (Twisted Bag)", 1);
-        put("20lb Paper Bag", 1);
-        put("Salt (bag)", 1);
         put("2oz Souffle Cups", 25);
         put("2oz Souffle Lids", 25);
         put("Peanut Trays", 4);
         put("Peanut Butter", 6);
         put("Ketchup (Packets)", 1000);
         put("Mustard (Cryovac)", 2);
-        put("Peanuts", 1);
         put("Small Gloves", 10);
         put("Medium Gloves", 10);
         put("Large Gloves", 10);
         put("Extra Large Gloves", 10);
         put("Straws", 9);
+        put("Lettuce", 24);
         put("Napkins", 12);
         put("Bacon Paper", 24);
         put("Poutine Hinged Bowls", 3);
@@ -141,30 +140,21 @@ public class OrderFragment extends Fragment {
         put("24oz Fry Cup", 24);
         put("8oz Gravy Bowl", 20);
         put("8oz Gravy Lid", 20);
-        put("BIB Coke", 1);
-        put("BIB Diet Coke", 1);
-        put("BIB Iced Tea", 1);
-        put("BIB Root Beer", 1);
-        put("BIB Sprite", 1);
-        put("BIB Fruitopia", 1);
-        put("BIB Fanta (Orange)", 1);
         put("Drink Carriers", 4); // Double check
-        put("Cajun Spice", 6);
-        put("Poutine Gravy", 4); // Double check
+        put("Cajun Spice", 4);
+        put("Poutine Mix", 6); // Double check
         put("Aluminum Foil", 6);
+        //put("Hot Dogs", 4);
         put("Sanitizer Cloths", 215);
         put("Filter Paper (Fryers)", 100);
         put("Green Pads", 6);
         put("Clorox Bleach", 4); // Double check
         put("Stainless Steel Polish", 4); // Double check
-        put("Hand Soap", 1); // Double check
+        put("Hand Soap", 2); // Double check
         put("2-in-1 Peroxide/Multi-surface", 1);
         put("2-in-1 Floor Cleaner Degreaser", 1);
-        put("Kayquat Sanitizer", 1);
-        put("Dish Sink Detergent", 1);
-        put("K5 Sanitizer Pills", 1);
-        put("Hygiene Disposal Bags", 1);
-        put("Baby Table Pads", 1);
+        put("Kayquat Sanitizer", 2);
+        put("Dish Sink Detergent", 2);
         put("Toilet Paper", 18);
         put("Whipped Cream", 12);
 
@@ -271,110 +261,141 @@ public class OrderFragment extends Fragment {
         }
     }
 
+
     private int calculatePeanutOilOrderAmount(double currentInventory, double forecastValue, double peanutOilCog) {
         // Constants defining minimum and maximum inventory levels
         final int minimumRequired = 7;
-        final int maximumInventory = 14;
-
-        // Calculate the number of boxes needed based on forecast value and cost of goods (COG) for peanut oil
-        // Assuming peanutOilCog represents the cost for one box and forecastValue represents the total forecasted sales
-        double boxesNeededBasedOnForecast = forecastValue / peanutOilCog;
-
-        // Calculate desired order amount based on forecasted need
-        int desiredOrderAmount = (int) Math.ceil(boxesNeededBasedOnForecast - currentInventory);
+        final int maximumInventory = 12;
 
         // Determine the day of the week to adjust order strategy
         Calendar calendar = Calendar.getInstance();
         int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
 
-        // On Monday to Wednesday, adjust the order to ensure inventory is built up to the target level (14 boxes)
-        if (dayOfWeek >= Calendar.MONDAY && dayOfWeek <= Calendar.WEDNESDAY) {
-            if (currentInventory + desiredOrderAmount < maximumInventory) {
-                desiredOrderAmount = maximumInventory - (int) currentInventory;
-            }
-        } else {
-            // Ensure the order amount does not cause inventory to fall below minimum or exceed maximum levels
-            if (currentInventory + desiredOrderAmount > maximumInventory) {
-                desiredOrderAmount = maximumInventory - (int) currentInventory; // Adjust to not exceed max
-            } else if (currentInventory + desiredOrderAmount < minimumRequired) {
-                desiredOrderAmount = minimumRequired - (int) currentInventory; // Adjust to meet minimum
-            }
-        }
+        // Calculate the number of boxes needed based on forecast value and cost of goods (COG) for peanut oil
+        double boxesNeededBasedOnForecast = ((forecastValue * 1.25) / 10000) * peanutOilCog;
 
-        // Final adjustment to ensure the order does not result in negative values or exceed maximum capacity
-        desiredOrderAmount = Math.max(desiredOrderAmount, 0); // Prevent negative orders
-        return Math.min(desiredOrderAmount, maximumInventory - (int) currentInventory); // Prevent exceeding max
+        // Ensure the calculated boxes needed do not exceed the maximum inventory level
+        int maxBoxesNeeded = Math.min(maximumInventory - (int) currentInventory, (int) Math.ceil(boxesNeededBasedOnForecast));
+
+        // On Monday to Wednesday, adjust the order to ensure inventory is built up to the target level (12 boxes)
+        if (dayOfWeek >= Calendar.MONDAY && dayOfWeek <= Calendar.WEDNESDAY) {
+            int requiredInventory = Math.max(minimumRequired, maxBoxesNeeded); // Ensure a buffer for forecast
+            return Math.min(requiredInventory, maximumInventory - (int) currentInventory);
+        } else {
+            // Calculate the required inventory based on the forecasted need
+            int requiredInventory = Math.min(maximumInventory, (int) Math.ceil(boxesNeededBasedOnForecast));
+
+            // Ensure the order amount does not result in negative values
+            return Math.max(minimumRequired - (int) currentInventory, Math.min(requiredInventory, maximumInventory - (int) currentInventory));
+        }
     }
 
-    private int calculatePotatoBagOrderAmount(double forecastValue, double currentInventory) {
+
+
+
+    private int calculatePotatoBagOrderAmount(double forecastValue, double currentInventory, double potatoCog) {
+        // Constants defining minimum and maximum inventory levels
         final int minimumRequired = 28; // Minimum inventory required for Potatoes
         final int maximumStorage = 50; // Maximum storage capacity for Potatoes
 
-        int orderAmount = minimumRequired - (int) currentInventory;
-        orderAmount = Math.max(orderAmount, 0); // Ensure the order amount is not negative
-        return Math.min(orderAmount, maximumStorage - (int) currentInventory);
+        // Calculate the number of bags needed based on forecast value and cost of goods (COG) for potatoes
+        // Assuming potatoCog represents the cost for one bag and forecastValue represents the total forecasted sales
+        double bagsNeededBasedOnForecast =  (((forecastValue * 1.25) / 10000) * potatoCog);
+
+        // Calculate desired order amount based on forecasted need
+        int desiredOrderAmount = (int) Math.ceil(bagsNeededBasedOnForecast - currentInventory);
+
+        // Ensure the order amount does not cause inventory to fall below minimum or exceed maximum levels
+        desiredOrderAmount = Math.max(desiredOrderAmount, minimumRequired - (int) currentInventory); // Adjust to meet minimum
+        desiredOrderAmount = Math.min(desiredOrderAmount, maximumStorage - (int) currentInventory); // Prevent exceeding max
+
+        return Math.max(desiredOrderAmount, 0);
     }
 
 
+
+    private int calculateMilkshakeBaseOrderAmount(double currentInventory, double forecastValue, double milkshakeCog) {
+        // Constants defining minimum and maximum inventory levels
+        final int minimumRequired = (int) Math.ceil(forecastValue); // Minimum inventory required based on forecast
+        final int maximumInventory = 7;
+
+        // Convert current inventory to the equivalent number of boxes
+        double currentBoxes = currentInventory / 2.0; // 2 bags of milkshake make up 1 box
+
+        // Calculate the number of boxes needed based on forecast value and cost of goods (COG) for milkshake base
+        // Assuming milkshakeCog represents the cost for one box and forecastValue represents the total forecasted sales
+        double boxesNeededBasedOnForecast = forecastValue / milkshakeCog;
+
+        // Calculate desired order amount based on forecasted need
+        int desiredOrderAmount = (int) Math.ceil(boxesNeededBasedOnForecast - currentBoxes);
+
+        // Ensure the order amount does not cause inventory to fall below minimum or exceed maximum levels
+        desiredOrderAmount = Math.max(desiredOrderAmount, minimumRequired - (int) currentBoxes); // Adjust to meet minimum
+        desiredOrderAmount = Math.min(desiredOrderAmount, maximumInventory - (int) currentBoxes); // Prevent exceeding max
+
+        // Convert desired order amount back to bags
+        return desiredOrderAmount;
+    }
+
     private int calculateOrderAmount(String itemName) {
-        double forecastValue = sharedViewModel.getForecast().getValue(); // Forecasted sales in dollars.
+        double forecastValue = (sharedViewModel.getForecast().getValue() * 1.10); // Forecasted sales in dollars.
         double currentInventoryUnits = latestInventoryQuantities.getOrDefault(itemName, 0.0); // Current inventory in units.
         double usagePer10k = latestCogValues.getOrDefault(itemName, 0.0); // Usage rate per $10k of sales in cases.
 
-        Log.d("Inve", itemName + usagePer10k);
         if (itemName.equals("Peanut Oil")) {
             return calculatePeanutOilOrderAmount(currentInventoryUnits, forecastValue, usagePer10k);
         } else if (itemName.equals("Potatoes")) {
-            return calculatePotatoBagOrderAmount(forecastValue, currentInventoryUnits);
+            return calculatePotatoBagOrderAmount(forecastValue, currentInventoryUnits, usagePer10k);
+        } else if (itemName.equals("Milkshake Base")) {
+            return calculateMilkshakeBaseOrderAmount(currentInventoryUnits, forecastValue, usagePer10k);
         }
 
         // Calculate base required cases based on the forecast and the item's usage rate.
         double baseRequiredCases = ((forecastValue / 10000.0) * usagePer10k);
 
-        // Determine the surplus factor based on whether the item is produce or not.
-        double surplusFactor = produceItems.contains(itemName) ? 1.15 : 1.10;
+        // Determine the surplus factor based on whether the item is produce or not, with an additional 20% for high-risk items.
+        double surplusFactor = produceItems.contains(itemName) ? 1.40 : 1.15;
+        if (itemName.matches("Onions") || itemName.matches("Mushrooms") || itemName.matches("Pickles") || itemName.matches("Cheese") || itemName.matches("BOTTLE") || itemName.matches("Poutine Mix")) {
+            surplusFactor += 0.10;
+        }
+        double totalRequiredCasesWithSurplus = Math.ceil(baseRequiredCases * surplusFactor);
 
-        // Apply the surplus factor to the base required cases.
-        double totalRequiredCasesWithSurplus = baseRequiredCases * surplusFactor;
+        if (caseItemsMaxQuantity.containsKey(itemName)) {
+            int maxQuantity = caseItemsMaxQuantity.get(itemName);
+            double casePercentage = currentInventoryUnits / maxQuantity;
+                double valueOfItems = 10000 / usagePer10k;
+                double valueOfFractionalItems = (valueOfItems / maxQuantity) * currentInventoryUnits;
+                double remainingForecast = forecastValue - valueOfFractionalItems;
+                Log.d("fractio", itemName + valueOfFractionalItems);
+                if ((forecastValue) < valueOfFractionalItems) {
+                    return (int) (totalRequiredCasesWithSurplus - 1);
+            }
+                else if ((((remainingForecast/valueOfItems) * surplusFactor) < 1)) {
+                    return (int) totalRequiredCasesWithSurplus - 1;
+            }
+        } else if (currentInventoryUnits < 1 && currentInventoryUnits > 0) {
+            // Calculate the value of items for the current fractional inventory
+            double valueOfItems = (10000 / usagePer10k);
+            double valueOfFractionalItems = valueOfItems * currentInventoryUnits;
+            double valueOfBaseRequiredItems = valueOfItems * baseRequiredCases;
 
-        // Evaluate the significance of fractional inventory.
-        double fractionalInventoryImpact = evaluateFractionalImpact(currentInventoryUnits, usagePer10k, totalRequiredCasesWithSurplus, itemName);
+            // Calculate the remaining forecast after accounting for base required items
+            double remainingForecast = forecastValue - valueOfFractionalItems;
 
-        // Adjust required cases based on fractional inventory significance.
-        double adjustedTotalRequiredCases = totalRequiredCasesWithSurplus - fractionalInventoryImpact;
-
-        // Apply risk adjustment factor.
-        double riskAdjustment = calculateRiskAdjustmentFactor(itemName, currentInventoryUnits, adjustedTotalRequiredCases);
-        adjustedTotalRequiredCases += riskAdjustment;
+            // Check if the fractional item amount is significant enough to affect the order quantity
+            if (((remainingForecast/valueOfItems) * surplusFactor) < 1) {
+                // If the fractional item amount is greater than the remaining forecast, reduce the order quantity by 1
+                return (int) totalRequiredCasesWithSurplus - 1;
+            } else {
+                // Otherwise, maintain the original order quantity
+                return (int) totalRequiredCasesWithSurplus;
+            }
+        }
 
         // Final calculation for additional cases or units needed.
-        return calculateFinalOrderQuantity(itemName, currentInventoryUnits, adjustedTotalRequiredCases);
+        return calculateFinalOrderQuantity(itemName, currentInventoryUnits, totalRequiredCasesWithSurplus);
     }
 
-    private double evaluateFractionalImpact(double currentInventoryUnits, double usagePer10k, double dailyUsageEstimate, String itemName) {
-        double fractionalPart = currentInventoryUnits % 1;
-        int unitsPerCase = caseItemsMaxQuantity.getOrDefault(itemName, 1);
-
-        // Adjust evaluation based on the proportion of a case and its daily usage impact.
-        double significanceThreshold = calculateSignificanceThreshold(usagePer10k, dailyUsageEstimate, unitsPerCase, fractionalPart);
-
-        return fractionalPart >= significanceThreshold ? fractionalPart * usagePer10k : 0;
-    }
-
-    private double calculateSignificanceThreshold(double usagePer10k, double dailyUsageEstimate, int unitsPerCase, double fractionalPart) {
-        // Dynamic calculation of significance threshold based on item specifics.
-        double dailyFractionalUsage = fractionalPart * (usagePer10k / unitsPerCase) / dailyUsageEstimate;
-
-        // Sensitivity adjustment based on fractional usage compared to daily demand.
-        return dailyFractionalUsage * unitsPerCase; // Normalize against units per case for relative impact.
-    }
-
-    private double calculateRiskAdjustmentFactor(String itemName, double currentInventoryUnits, double adjustedTotalRequiredCases) {
-        // Risk adjustment for volatility, especially for high-turnover or critical items.
-        double riskFactor = itemName.matches(".*Bottle.*") ? 0.20 : 0;
-        double shortfall = adjustedTotalRequiredCases - currentInventoryUnits;
-        return shortfall > 0 ? shortfall * riskFactor : 0;
-    }
 
     private int calculateFinalOrderQuantity(String itemName, double currentInventoryUnits, double adjustedTotalRequiredCases) {
         if (caseItemsMaxQuantity.containsKey(itemName)) {
@@ -389,10 +410,6 @@ public class OrderFragment extends Fragment {
             return (int) Math.max(additionalUnitsNeeded, 0);
         }
     }
-
-
-
-
 
 
 
